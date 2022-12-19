@@ -9,9 +9,7 @@ import SwiftUI
 
 // Articles
 let getURL = "https://caresignal.herokuapp.com/get-articles"
-let postURL = "https://caresignal.herokuapp.com/post-articles"
-// HW
-let gethwURL = "https://caresignal.herokuapp.com/get-hw-data"
+let postURL = "https://caresignal.herokuapp.com/add-articles"
 
 // Testing model
 struct Article: Decodable{
@@ -21,16 +19,6 @@ struct Article: Decodable{
     var AutherImage: String
     var content: String
     var ArticleTitle: String
-}
-
-struct Hardware: Decodable{
-//    var _id: String
-//    var gpsTime : String
-//    var gpsLong: String
-//    var gpsAtl: String
-//    var counter: String
-//    var fallDetect: String
-    var body: String
 }
 
 struct PostArticle: Decodable {
@@ -43,27 +31,6 @@ struct PostArticle: Decodable {
 
 class ViewArticle: ObservableObject{
     @Published var articlesList = [Article]()
-    @Published var hwList = [Hardware]()
-
-    
-    // Load HW Data
-    func loadHardwareData () {
-        guard let url =  URL(string: gethwURL) else {return}
-        URLSession.shared.dataTask(with: url){(data, res, error) in
-            do{
-                if let data = data {
-                    let result = try JSONDecoder().decode([Hardware].self, from: data)
-                    DispatchQueue.main.async {
-                        self.hwList = result
-                    }
-                }else{
-                    print("No Data")
-                }
-            }catch(let error){
-                print(error.localizedDescription)
-            }
-        }.resume()
-    }
 
     // Load Articales
     func loadData () {
@@ -83,42 +50,42 @@ class ViewArticle: ObservableObject{
             }
         }.resume()
     }
-    // Post Articales
-    func postData(ArticleTitle: String, content: String){
-        guard let url =  URL(string: postURL) else {return}
-        
-        let body: [String: Any] = ["mediaclID":1234,"AutherName":"JannaTest","AutherImage":"https://cdn-icons-png.flaticon.com/512/3048/3048127.png","content":content,"ArticleTitle":ArticleTitle]
-        
-        let finalData = try! JSONSerialization.data (withJSONObject: body)
-        var request = URLRequest(url: url)
-        request.httpMethod="POST"
-        request.httpBody = finalData
-        
-        URLSession.shared.dataTask(with: url){(data, res, error) in
-            do{
-                if let data = data {
-                        let result = try JSONDecoder().decode(PostArticle.self, from: data)
-                        print(result)
-                    
-                }else{
-                    print("No Data")
-                }
-            }catch(let error){
-                print(error.localizedDescription)
-            }
-        }.resume()
+   // POST Article
+    func postData(a: String, c: String){
+        guard let url =  URL(string:postURL)
+               else{
+                   return        }
+        let body: [String: String] = ["mediaclID": "1234", "AutherName": "Dr. Janna", "AutherImage": "", "content": c, "ArticleTitle": a]
+               let finalBody = try? JSONSerialization.data(withJSONObject: body)
+               var request = URLRequest(url: url)
+               request.httpMethod = "POST"
+               request.httpBody = finalBody
+               
+               request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+               URLSession.shared.dataTask(with: request){
+                   (data, response, error) in
+                   
+                   guard let data = data else{
+                       return
+                   }
+                   print(data)
+                   
+               }.resume()
+               
     }
 }
+
+
+
 
 struct ContentView: View {
     @ObservedObject var viewArticle = ViewArticle()
     @State var ArticleTitle = ""
-//    @State var AutherName = ""
     @State var content = ""
     @State var submit = false
     
     func buttonAction(){
-        viewArticle.postData(ArticleTitle: ArticleTitle, content: content)
+        viewArticle.postData(a: ArticleTitle, c: content)
         }
     
     var body: some View {
@@ -148,19 +115,6 @@ struct ContentView: View {
                 Text("Add Article")
             }
             
-//            NavigationView{
-//                        VStack{
-//                            List(viewArticle.hwList, id:\._id){
-//                                hwItem in Text(hwItem.gpsTime)
-//                            }
-//                        }.onAppear(perform: {
-//                             viewArticle.loadHardwareData()
-//                        }).navigationTitle("Hardware Data")
-//            }.tabItem{
-//                Image(systemName: "folder")
-//                Text("Hardware")
-//            }
-
         }
 
     }
